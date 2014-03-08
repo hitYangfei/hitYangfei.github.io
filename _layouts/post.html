@@ -1,0 +1,39 @@
+---
+layout: default
+---
+<div class="row">
+  <div class="large-12 columns">
+    <article>
+      <h2>{{ page.title }}</h2>
+      <p class="meta">
+        Posted on: {{ page.date | date_to_string }}, by
+        <a href="#">
+          {% if page.author %}
+            {{ page.author }}
+          {% else %}
+            {{ site.author }}
+          {% endif %}
+        </a>
+      </p>
+      <hr />
+
+      <div class="post">
+        {{ content }}
+      </div>
+    </article>
+    <!-- Duoshuo Comment BEGIN -->
+  <div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"hityangfei"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+  </script>
+<!-- Duoshuo Comment END -->
+  </div>
+</div>

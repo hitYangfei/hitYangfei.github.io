@@ -1,0 +1,9 @@
+name     : hityangfei.github.io
+markdown : redcarpet
+pygments : true
+nick     : 川~~旭~~
+fullname : 杨飞
+copyright: 2014
+permalink: /:categories/:year/:month/:day/:title.html
+author   : 飞飞
+exclude  : ['bower_components', 'node_modules', '*.rb', '*.json', 'gulpfile.js']

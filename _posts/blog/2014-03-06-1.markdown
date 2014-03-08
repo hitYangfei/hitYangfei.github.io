@@ -1,0 +1,105 @@
+---
+layout    : post
+title     : "win7搭建jekyll环境"
+date      : 2014-03-06
+
+categories:
+- blog
+---
+
+拥有自己的blog，从搭建jekyll环境做起。win7用户也同样可以，无需羡慕Mac&linux。
+
+###安装Ruby & Ruby Development Kit & Python
+Ruby下载地址[http://rubyinstaller.org/downloads/][http://rubyinstaller.org/downloads/]；
+
+笔者下载的是**ruby-2.0.0-p451-x64-mingw32.7z**以及**DevKit-mingw64-64-4.7.2-20130224-1432-sfx.exe**。将ruby的安装目录**xxx/ruby-2.0.0-p451-x64-mingw32/bin/**加入环境变量PATH中；
+
+笔者是在很早之前安装的python版本号为2.7.5,在这里不进行安装过程的赘述，安装完python一样需要配置环境变量PATH。需要注意python版本如果过高可能会出问题，建议2.7.x的版本。
+
+[http://rubyinstaller.org/downloads/]: http://rubyinstaller.org/downloads/
+
+###生产config.yml文件并修改
+
+在Ruby Development Kit的安装目录中（笔者为H:\devkit）找到**dk.rb**文件，然后进入命令行，cd进入到这个目录(即H:\devkit)，键入`ruby dk.rb init`即可生产config.yml文件。打开config.yml文件，在最后一行加入ruby的安装目录。如下图
+
+![修改config.yml](/images/blog1/1.jpg "修改config.yml文件")
+
+修改完毕后，进入命令行，键入`ruby dk.rb install`命令。
+
+###安装jekyll & easy_install & Pygments
+
+安装jekyll:进入命令行，键入`gem install jekyll`;
+
+安装easy\_install:首先下载distribute,下载地址为[https://pypi.python.org/pypi/distribute/][https://pypi.python.org/pypi/distribute/]，下载完毕后解压，进入解压目录，命令行下键入`python distribute_setup.py`;
+
+安装Pygments：进入distribute解压目录，键入`easy_install.py Pygments`进行安装。
+
+[https://pypi.python.org/pypi/distribute/]:https://pypi.python.org/pypi/distribute/
+
+###go jekyll 
+至此一切OK，可以潇洒的go jekyll了(笔者认为go比run这个词爽一点 哈哈)。
+{% highlight bash %}
+jekyll new myBlog
+cd myBlog
+jekyll serve
+{% endhighlight %}
+在浏览器中输入localhost://4000就可以了，笔者的效果图为
+![jeykll效果图](/images/blog1/2.jpg "jeykll效果图")
+
+###中文乱问问题 
+一切准备就绪后，还需要对jekyll做一个小小的改动以避免中文乱码的问题。   
+方法为:找到文件**convertible.rb**，笔者的目录为   
+`H:\ruby\ruby-2.0.0-p451-x64-mingw32\lib\ruby\gems\2.0.0\gems\jekyll-1.4.2\lib\jekyll`    
+将下面两行代码，位于文件**convertible.rb**第38行左右:    
+`self.content = File.read_with_options(File.join(base, name),merged_file_read_opts(opts))`  
+替换为下面的代码:     
+`self.content = File.read_with_options(File.join(base, name),:encoding=>"utf-8")`
+
+###jekyll serve可能遇到的问题
+####jekyll版本问题
+如果在jekyll serve时遇到下图问题，那说明安装的jekyll版本过高。
+
+![jekyll版本问题](/images/blog1/3.jpg "jekyll版本问题")
+
+解决方法为，首先卸载jekyll,进入命令行，键入`gem uninstall jekyll`
+
+![jekyll卸载](/images/blog1/4.jpg "jekyll卸载")
+
+重新安装jekyll-1.4.2,进入命令行，键入`gem install jekyll --version "=1.4.2"`
+
+![jekyll-1.4.2安装](/images/blog1/5.jpg "jekyll-1.4.2安装")
+####pygments版本问题
+
+如果在jekyll serve时遇到下图问题，那说明安装的pygments版本过高。
+
+![pygments版本问题](/images/blog1/6.jpg "pygments版本问题")   
+![pygments版本问题](/images/blog1/7.jpg "pygments版本问题")    
+
+解决方法与上面的一样，先卸载再安装。
+
+卸载方法：`gem uninstall pygments.rb --version "=0.5.4"`,笔者卸载时的版本号为0.5.4，请根据自己的版本号进行修改version参数；
+
+安装方法：`gem install pygments.rb --version "=0.5.0"`。
+
+如果由于网络问题安装失败，可以到[https://rubygems.org/gems/pygments.rb][https://rubygems.org/gems/pygments.rb]选择0.5.0版本下载,然后输入命令`gem install --local pygments.rb-0.5.0.gem`即可。
+
+![本地安装pygments](/images/blog1/8.jpg "本地安装pygments")   
+
+[https://rubygems.org/gems/pygments.rb]:https://rubygems.org/gems/pygments.rb
+
+***
+###Summary
+折腾了好几天，终于弄好了，情不自禁的想要写出来跟大家分享一下过程中的泪。在jekyll官网上看的对windows支持的不是很好，于是转战ubuntu，有了wubi的精力，就再也不想U盘或者LiveCD安装了，官网上下了好多版本最后只有11.10成功安装，妄想升级到12.04结果，网速慢的离奇，下了一晚上，第二天不小心安了个什么东西，直接死机，在开机进入ubuntu依然无力回天，没办法，那就继续研究一下win7上的安装吧。功夫不负有心人，看了几篇文章以及官网的一些指导，一路磕磕绊绊终于可以run了。于是当晚就果断就诞生了第一篇。
+
+***
+
+#参考
+[http://www.madhur.co.in/blog/2011/09/01/runningjekyllwindows.html][http://www.madhur.co.in/blog/2011/09/01/runningjekyllwindows.html]
+[http://www.cnblogs.com/BeginMan/p/3549241.html][http://www.cnblogs.com/BeginMan/p/3549241.html]
+
+
+[http://www.madhur.co.in/blog/2011/09/01/runningjekyllwindows.html]:http://www.madhur.co.in/blog/2011/09/01/runningjekyllwindows.html
+
+[http://www.cnblogs.com/BeginMan/p/3549241.html]:http://www.cnblogs.com/BeginMan/p/3549241.html
+
+

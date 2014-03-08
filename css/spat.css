@@ -1,0 +1,32 @@
+/* Single page application template - Styles
+ * 
+ * Customize the dimensions as you see fit
+ *
+ */
+
+/* Generic pane styles */
+body { margin: 0; padding: 0; }
+.row, .col { overflow: hidden; position: absolute; }
+.row { left: 0; right: 0; }
+.col { top: 0; bottom: 0; }
+.scroll-x { overflow-x: auto; }
+.scroll-y { overflow-y: auto; }
+
+/* App specific styles */
+.header.row { height: 75px; top: 0; }
+.body.row { top: 75px; bottom: 50px; }
+.footer.row { height: 50px; bottom: 0; }
+.left.col { width: 250px; }
+.right.col { left: 250px; right: 0; }
+
+/* Customize these or remove */
+.header.row, .footer.row {
+	background-color: #3E3F41;
+	color: #FFFFFF;
+}
+.body.row {
+	background-color: #FFFFFF;
+}
+.left.col {
+	background-color: #F7F7F7;
+}
