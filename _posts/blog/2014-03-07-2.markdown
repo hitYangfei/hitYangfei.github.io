@@ -1,0 +1,85 @@
+---
+layout    : post
+title     : "LeetCode:Reverse Wrods in a String"
+date      : 2014-03-07
+
+categories:
+- blog
+---
+
+![题目描述](/images/blog2/1.jpg "题目描述")
+
+###算法思想
+这是leetcode在2014-03-05新提交的一道题，笔者看到题目的第一眼想到的是“结构之法，算法之道”系列博客中的字符串左转问题。于是很自然的就想到首先将字符串进行逆序处理，然后以单词为单位再进行逆序即可。
+
+以the sky blue为例进行说明：
+首先进行字符串逆序处理得到字符串：eulb yks eht；
+然后以单词为单位再一次进行逆序处理，得到字符串blue sky the，即问题的解。
+
+如果用C/C++实现，显然第一步需要O(n)的时间复杂度，第二步稍微复杂一点。顺序扫描字符串，设positon=0，如果遇到的字符非空格，则在position位置插入当前字符；否则更新positon的值为当前遇到空格的下标索引。因此显然第二步的的时间复杂度也为O(n)，因此算法整体是一个O(n)的算法。
+
+###Java实现
+上文在分析时间复杂度时之所以要加上C/C++实现的前提是因为C/C++中拥有指针的概念，而Java中没有。所以在用Java实现时要应用StringBuffer类而非单纯的应用String类，您可以简单的将String理解为一个C语言中字符数组，StringBuffer理解为C语言中的字符链表。如果您想详细理解这两者之间的区别建议您去阅读leeon一篇的名为“Java中String不在纠结”的一篇文章[http://octsky.com/][http://octsky.com/]。因此StringBuffer在处理动态字符串时，插入操作的效率为O(1)，而String则这时候出来那些内容不会发生变化固定字符串。代码如下。
+
+[http://octsky.com/]:[http://octsky.com/]
+
+{% highlight java linenos%}
+public String reverseWords(String s) {
+	if(s==null)
+		return new String();
+	if(s.length()==0)
+		return s;
+	String strs = s.trim();
+	if(strs.length()==0){
+		return new String("");
+	}
+	//去掉多余空格
+    StringBuffer str = new StringBuffer();
+    int state = 0;
+    for(int i=strs.length()-1;i>=0;i--){
+        if(state==0){
+        	if(strs.charAt(i)!=' '){
+        		str.append(strs.charAt(i));
+        	}
+        	else{
+        		state = 1;
+        		str.append(strs.charAt(i));
+        	}
+        }
+        else if(state==1){
+        	if(strs.charAt(i)!=' '){
+        		str.append(strs.charAt(i));
+        		state = 0;
+        	}
+        }
+    }
+
+    String strTmp = str.toString();
+    StringBuffer result = new StringBuffer();
+    int positon = -1;
+    for(int i=0;i<str.length();i++){
+        if(strTmp.charAt(i)!=' '){
+        	result.insert(positon+1, strTmp.charAt(i));
+        }
+        else{
+        	positon = i;
+        	result.append(strTmp.charAt(i));
+        }
+    }
+    return result.toString().trim();
+}
+{% endhighlight %}
+
+代码的2-9行是健壮性处理。
+正如注释显示的那样11-29行是算法思想中的第一步，31-42行是算法思想中的第二步。leetcode总是惜字如金，每当笔者信心满满的submit的时候总是能碰到之前没有想到的情况发生，在笔者的第一个版本提交上去的时候有这样一个用例没有通过：
+
+输入为      ：\_\_\_a\_\_\_b
+笔者的输出为：b\_\_\_a
+正确的输出为：b\_a
+
+下划线代表空格。这个用例的意思是说要对输入的字符串做一个去掉首位空格以及单词间的多余空格，输出的两个单词间只只允许一个空格。因此代码中的11-29行显得有点臃肿，其中不仅对字符串做了逆序的操作，还在逆序处理的过程中去掉了多余的空格，方法为有限状态机的方法。状态机不是本篇文章的内容，在这里不进行赘述。
+
+###改进
+
+从时间复杂度来看似乎已经达到了最优，但是笔者的算法实现如果较真来说是O(4n)的效率，两个trim()函数加上算法的两个步骤一共是4n。如果精益求精，完全可以不用trim()函数，将所有的逻辑写在一遍循环中，因此可以达到O(n)的效果，是原来的四倍效率。处理过程为：
+顺序扫描字符串，设position=0，如果遇到的字符非空格，则在positon位置插入当前字符，令position++；否则position值更新为0，并在position的位置插入空格。由于笔者比较懒惰也非一个完美主义者，因此在上面的实现代码Accepted后就对这道题没有兴趣了。
