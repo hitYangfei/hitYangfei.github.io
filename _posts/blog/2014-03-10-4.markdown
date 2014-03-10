@@ -24,6 +24,7 @@ Java(TM) Object Serialization Specification.  However, it is strongly
  serialVersionUID values, since the default serialVersionUID computation is
  highly sensitive to class details that may vary depending on compiler
 implementations, and can thus result in unexpected **InvalidClassException**s during deserialization.
+
 ###readObject()与wirteObject()
 readObject(java.io.ObjectInputStream in)函数用来反序列化一个对象，writeObject(java.io.ObjectOutputStream out)用来序列化一个对象,二者均为throw IOException, ClassNotFoundException两个异常。可以采用默认的readObject()与wirteObject()的实现，也可在实现Serializable接口的类中添加这两个方法自己手动实现。那么什么情况采用默认实现，什么情况采用自己手动实现呢？先看下面这段代码：本文称之为版本1的StringList实现
 {% highlight java linenos%}
