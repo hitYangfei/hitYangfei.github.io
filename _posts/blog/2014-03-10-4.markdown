@@ -142,5 +142,5 @@ private void writeObject(ObjectOutputStream s) throws IOException{
 >对不想被序列化的字段前加transient
 
 ###后记
-序列化还有很多细节并没有在本文中体现出来：Singleton模式下的序列化特殊处理；一些需要保护性拷贝的序列化处理；Externalizable接口；静态字段的序列化等。如果有经历，会继续写一篇序列化的文章。
+序列化还有很多细节并没有在本文中体现出来：Singleton模式下的序列化特殊处理；一些需要保护性拷贝的序列化处理；Externalizable接口；静态字段的序列化等。如果有精力，会继续写一篇序列化的文章。
 
