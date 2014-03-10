@@ -1,0 +1,145 @@
+---
+layout    : post
+title     : "Java:Serializable接口"
+date      : 2014-03-08
+
+categories:
+- blog
+---
+
+本章开篇笔者引用Effective Java中的一段话来解释什么是对象的序列化：
+>对象的序列化(object serialization)API，提供了一个框架，用来将对象编码成一个字节流，已经从字节流编码中重新构建对象。
+
+###serialVersionUID
+如果你用Eclipse写了一个类并且实现了Serializable接口，通常会选择自动生成类似那么这样的一行代码，唯一的不同是赋值语句后面的值有可能不相同。
+{% highlight java %}
+private static final long serialVersionUID = -3009892641258294435L;
+{% endhighlight %}
+serialVersionUID可以被解释为*流的唯一标识符*，或者被称为*序列版本UID*,可以采用Eclise自动生成的值也可以程序员自己赋值。在实现Serializable接口的类中，如果你没有一个显示的static final long类型的serialVersionUID，系统会自动为自动正常一个serialVersionUID值，生产的过程比较复杂与类名、实现的接口、以及所有公有何受保护的成名的名字密切相关。也就是说，如果你没有一个显示的serialVersionUID，那么一旦你的类库进行了更新，则serialVersionUID值会重新计算，这样会导致老版本的序列化流被反序列化为新版本的类时会引起*InvalidClassException*。所以显示的serialVersionUID可以增加代码的兼容性已经灵活性。在Serializable接口的源码中有这样一段注释，意思大概跟上文类似：
+>If a serializable class does not explicitly declare a serialVersionUID, then
+the serialization runtime will calculate a default serialVersionUID value
+ for that class based on various aspects of the class, as described in the
+Java(TM) Object Serialization Specification.  However, it is strongly
+ recommended that all serializable classes explicitly declare
+ serialVersionUID values, since the default serialVersionUID computation is
+ highly sensitive to class details that may vary depending on compiler
+implementations, and can thus result in unexpected **InvalidClassException**s during deserialization.
+###readObject()与wirteObject()
+readObject(java.io.ObjectInputStream in)函数用来反序列化一个对象，writeObject(java.io.ObjectOutputStream out)用来序列化一个对象,二者均为throw IOException, ClassNotFoundException两个异常。可以采用默认的readObject()与wirteObject()的实现，也可在实现Serializable接口的类中添加这两个方法自己手动实现。那么什么情况采用默认实现，什么情况采用自己手动实现呢？先看下面这段代码：本文称之为版本1的StringList实现
+{% highlight java linenos%}
+package yf.java;
+import java.io.Serializable;
+
+public class StringList implements Serializable {
+	private static final long serialVersionUID = -917080011939695907L;
+	private int size;
+	private Entry head = null;
+	private static class Entry implements Serializable{
+		private static final long serialVersionUID = -5445142955314587741L;
+		String data;
+		Entry next;
+		Entry previous;
+		Entry(String data, Entry next, Entry previous) {
+		    this.data = data;
+		    this.next = next;
+		    this.previous = previous;
+		}
+	    private Entry addAfter(String e, Entry entry) {
+			Entry newEntry = new Entry(e, null,null);
+			entry.next = newEntry;
+			newEntry.previous=entry;
+			return entry;
+	    }	   
+	}
+	public boolean add(String e) { 
+		if(size==0){
+			head = new Entry(e,null,null);
+			size++;
+			return true;
+		}
+		Entry tmp = head;
+		while(tmp.next!=null)
+			tmp=tmp.next;
+		head.addAfter(e, tmp);
+		size++;
+	    return true;
+	}
+	public StringList() {
+		this.size = 0;
+	}
+	public void print(){
+		System.out.println(size);
+		Entry tmp = head;
+		while(tmp!=null){
+			System.out.print(tmp.data+"\t");
+			tmp = tmp.next;
+		}
+	}
+}
+{% endhighlight %}
+很显然上面代码是一个简单双向字符串链表的实现。再看下面这段测试程序：
+{% highlight java linenos%}
+public class TestStringList {
+	public static void main(String[] argvs)       
+			throws FileNotFoundException, IOException, ClassNotFoundException{
+		long a = System.currentTimeMillis();
+		StringList strs = new StringList();
+		for(int i=0;i<100;i++){
+			strs.add("a"+i);
+		}
+		ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("stringList.out"));
+		out.writeObject("yf information");
+		out.writeObject(strs);
+		out.close();
+		ObjectInputStream in = new ObjectInputStream(new FileInputStream("stringList.out"));
+		String s = (String)in.readObject();
+		StringList yfCopy = (StringList)in.readObject();
+		System.out.println(s);
+		yfCopy.print();
+		in.close();
+		System.out.println(System.currentTimeMillis()-a);
+	}
+}
+{% endhighlight %}
+测试程序很简单for循环中构建一个长度为100的双向链表，然后将其序列化到stringList.out中，然后再反序列化给变量yfCopy，输出yfCopy的内容。运行上面的测试代码会看到在控制台输出了从*a0*至*a99*的100个字符串。也许这没什么奇怪也是你想看到并且事先已经预料到的的事实。但是仔细想一下，问题似乎没有那么简单，StringList的print()函数的实现应该可以得到这样一个结论：
+>序列化的时候将100个字符串进行了序列化，注意并不仅仅对字符串进行了序列化，连带着每一个节点的prev&next也进行了序列化，因此反序列化的时候重新构建了一遍原始的双向链表。
+这个结果真的是我们想要的嘛？
+
+从逻辑意义上讲，StringList表示了一个字符串序列。但是从物理意义上讲，StringList是一个双向链表。默认的序列化函数会不遗余力的镜像链表中的每一个项目，以及这些项目之间的所有双向链表。但是往往这超出了我们的需求，我们大多数情况需要的仅仅是保存下字符串序列就可以了。上面的测试代码还存在一个缺陷，如果在for循环中将循环字符增大至1000(可能你的JVM不是这个数)，那么会出现**java.lang.StackOverflowError**错误。下面对StringList类进行修改，添加readObject()与wirteObject()函数,同时在szie和head前面加上**transient**字段：本文称之为版本2的StringList实现
+{% highlight java linenos%}
+
+private transient int size;
+private transient Entry head = null;
+
+
+private void writeObject(ObjectOutputStream s) throws IOException{
+		s.defaultWriteObject();
+		s.writeInt(size);
+		Entry tmp = head;
+		while(tmp!=null){
+			s.writeObject(tmp.data);
+			tmp = tmp.next;
+		}
+	}
+	private void readObject(ObjectInputStream s)     
+				throws ClassNotFoundException, IOException{
+		s.defaultReadObject();
+		int numbers = s.readInt();
+		for(int i=0;i<numbers;i++){
+			add((String)s.readObject());
+		}
+		
+	}
+{% endhighlight %}
+系统在序列化时如果发现有类拥有自己的readObject()函数会直接运行类自己的函数而非系统默认的，即使将这两个函数在我们的实现中声明为private；在字段前加上transient关键字可以在序列化的时候不对其进行序列化；在自己实现的readObject()函数中我们依然会调用defaultWriteObject()系统默认处理函数，这样做的好处是一旦添加新的字符不需要修改自己的readObject()函数就可以对其进行序列化，更强代码的灵活性，兼容性；在效率方面，运行10次每次100个字符串版本1运行时间为235ms自己改后版本2运行时间仅为40ms，版本2的效率要远远高于版本1的效率。
+
+>当一个类的逻辑意义和它的物理意义一致时用系统默认的序列化处理就足够了；当逻辑意义和物理意义不一致时，则需要仔细考虑是否需要自己手动来添加自己的序列化处理函数了。
+***
+###Summary
+序列化提供了一种从外部流构造对象的能力，保存对象状态，对于远程调用提供了遍历，同时也为编写程序带来了麻烦，当你决定实现Serializable接口时，你不得不为你的兼容性，灵活性而做很多的考虑。不过请一定要记住：
+>显示的serialVersionUID变量；
+>在系统默认的序列化处理和自己手动处理间做明智的选择
+>对不想被序列化的字段前加transient
+###后记
+序列化还有很多细节并没有在本文中体现出来：Singleton模式下的序列化特殊处理；一些需要保护性拷贝的序列化处理；Externalizable接口；静态字段的序列化等。如果有经历，会继续写一篇序列化的文章。
+
