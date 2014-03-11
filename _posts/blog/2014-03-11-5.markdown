@@ -1,0 +1,141 @@
+---
+layout    : post
+title     : "LeetCode:Palindrome Partitioning I&II"
+date      : 2014-03-11
+
+categories:
+- blog
+---
+
+![题目描述](/images/blog5/1.jpg "题目描述")
+
+>题意是求一个字符串s进行切分，要求得到的所有子串都是一个回文串。求出满足这个条件的所有可能切分。
+
+###思路一：递归遍历
+递归遍历字符串s的所有可能切分，验证每一种切分的字符是否都是回文串。Java代码实现如下：
+
+{% highlight java linenos %}
+public ArrayList<ArrayList<String>> partitionRecursion(String s) {
+	ArrayList<ArrayList<String>> res = new ArrayList<ArrayList<String>>();
+	ArrayList<String> tmp = new ArrayList<String>();
+	dfsRecursion(res,tmp,s);
+	    return res;
+	}
+	    
+public void dfsRecursion(ArrayList<ArrayList<String>> res, ArrayList<String> tmp, String s){
+	if (s.length()==0) res.add(new ArrayList<String>(tmp));
+	for(int i=1;i<=s.length();i++){
+	    String substr = s.substring(0,i);
+	    if(isPalindrome(substr)){
+	        tmp.add(substr);
+	        dfsRecursion(res,tmp,s.substring(i));
+	        tmp.remove(tmp.size()-1);
+	    }
+	}    
+}
+{% endhighlight %}
+
+###思路二：改进递归
+不妨以LeetCode上的**aab**为例说明思路一的运行过程。一共循环两次，第一次将字符串切分为a,a,b第二次将字符串切分为aa,b，程序结束。过程如下所示：
+![重叠子问题](/images/blog5/2.jpg "重叠子问题")
+
+可以看出在判断字符串**b**是不是回文时，出现了重叠子问题的现象，因此可以采用一个二维数组**m[][]**(**m[i][j]**表示字符串s从i到j的字符是一个回文)将子问题的结果保存下来以供后面的判断使用。Java实现代码如下：
+{% highlight java linenos%}
+public ArrayList<ArrayList<String>> partitionDP(String s) {
+	int length = s.length();
+	int[][] m = new int[length][length];
+	for(int i=0;i<length;i++){
+	    for(int j=i+1;j<=length;j++){
+	        if(isPalindrome(s.substring(i,j))){
+	        	m[i][j-1]=1;
+	        }
+	    }
+	}
+	ArrayList<ArrayList<String>> res = new ArrayList<ArrayList<String>>();
+	ArrayList<String> tmp = new ArrayList<String>();
+	dfsDP(res,tmp,s,m,0);
+	return res;     
+}
+
+ public void dfsDP(ArrayList<ArrayList<String>> res, ArrayList<String> tmp, String s,int[][] m,int offset){
+	if (offset==s.length()) res.add(new ArrayList<String>(tmp));
+	for(int i=offset;i<s.length();i++){
+	    if(m[offset][i]==1){
+	        tmp.add(s.substring(offset,i+1));
+	        dfsDP(res,tmp,s,m,i+1);
+	        tmp.remove(tmp.size()-1);
+	    }
+	}    
+}
+{% endhighlight %}
+其实思路二已经有一些动态规划思想的意思了，但是还不够优化，这个问题我们暂且不谈，先看看改进后的效率如何。
+
+笔者测试用一个10个连续的a作为输入，连续运行十遍，二者的运行时间相差无几，从实验数据来看改进后的算法并没有改进前更快，可理论上改进后的应该比之前的要快才对的，到底哪里出问题了呢？
+
+其实这个问题是一个NP问题，以20个连续的a为例，这个字符串有2的19次幂,50W左右种可能的切分，而且每一种切分都是一个满足要求的解。在笔者的机器上这个测试用例会导致内存溢出(Java heap space)。你可能会奇怪为何不是栈溢出(java.lang.StackOverflowError)错误呢，因为在构造解的时候会进行ArrayList的拷贝操作，这个操作会大量消耗内存。笔者猜测内存增长的速度应该远高于栈的增加速度，因此是内存溢出错误。下面的一个测试例子可以有效验证笔者的猜想。
+
+去掉dpsXX()函数中有关ArrayList的所有代码，即只进行递归不构造解。输入仍然是20个连续的a这样的字符串。一共运行10次，得到的结果如下：
+>递归遍历的平均运行时间为126ms，改进后的运行时间为43ms，并没有出现任何内存错误。
+
+至此可以回答上面的问题了，改进后的算法其实要由于直接递归变量算法的，但是ArrayList的拷贝是一件十分耗时的工作，几乎占用了大量的运行时间，这个过程才是算法效率低的主要矛盾。因此当去掉有关ArrayList代码后，改进后的效率提升才体现出来。
+
+###改进
+其实在对数组m[][]领用的还不够，在构建数组m[i][j]时并没有领用到前面已经有的值，因此还可以进行改进，改进后的算法就是真正的动态规划了。在下面的Palindrome Partitioning II中探讨。
+
+###Palindrome Partitioning II
+![题目描述](/images/blog5/3.jpg "题目描述")
+
+>题意很清晰，返回Palindrome Partitioning I中所有切分中，切分次数最小的那个。
+
+###思路：两次动态规划
+之所以是两次动态规划，是因为在构建m[][]时会应用到一个动态规划，根据m[][]来求最小切分时最再启动一个动态规划。
+###动态规划构建数组m[][]
+再求m[][]时如何应用前面已经求得的值呢。如果m[i][j]=true,(这里将m的类型改为boolean)，那么m[i-1][j+1]其实就很好求了，只需知道s[i-1]是否等于s[j+1]了；以此类推如果m[i-1][j+1]=true,那么只需知道s[i-2]是否等于m[j+2]就可以求出m[i-2][j+2]了；如此一直下去知道下标越界。因此可以得到递归公式
+>m[i-1][j+1]=true only if m[i][j]=true&&s[i-1]=s[j+1]。
+当i==j时，求出的就是所有长度为基数的子串是否为回文；当i=j-1时，求出的就是所有长度为偶数的子串是否为回文。
+
+Java实现代码如下：
+{% highlight java linenos%}
+public boolean[][] buildTable(String s) {
+	int length = s.length();
+	boolean[][] m = new boolean[length][length];
+	for(int i=0;i<length;i++)
+		m[i][i] = true;
+	for(int i=1;i<length;i++){
+		//even
+		int l = i-1;
+		int r = i;
+		while(l>=0&&r<length&&s.charAt(l)==s.charAt(r))
+			m[l--][r++] = true;
+		 //odd
+		l = i-1;
+		r = i+1;
+		while(l>=0&&r<length&&s.charAt(l)==s.charAt(r))
+		    m[l--][r++]=true;
+	}
+	return m;
+}
+{% endhighlight %}
+###动态规划构建最小切分
+设数组cut[i]表示字符串s中i到末尾这段字符的最小切分，因此只需求出cut[0]即可。递推公式为
+>cut[i]=min(cut[i],cut[j+1]+1) only if m[i][j]=true 其中i<j<s.length() 
+
+Java实现代码如下：
+{% highlight java linenos %}
+public int minCut(String s){
+    boolean[][] m = buildTable(s);
+    int[] cut = new int[s.length()+1];
+   	for(int i=s.length()-1;i>=0;i--){
+    	cut[i] = s.length()-i;
+    	for(int j=i;j<s.length();j++){
+    		if(m[i][j])
+    			cut[i] = Math.min(cut[i], cut[j+1]+1);
+    	}
+    }
+    return cut[0]-1;
+}
+{% endhighlight %}
+###参考
+[http://blog.csdn.net/u011095253/article/details/9177451][http://blog.csdn.net/u011095253/article/details/9177451]
+
+[http://blog.csdn.net/u011095253/article/details/9177451]:http://blog.csdn.net/u011095253/article/details/9177451
