@@ -1,7 +1,7 @@
 ---
 layout    : post
 title     : "Java:Serializable接口"
-date      : 2014-03-08
+date      : 2014-03-10
 
 categories:
 - blog
