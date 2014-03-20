@@ -1,0 +1,62 @@
+---
+layout    : post
+title     : "LeetCode:Binary Tree Maximum Path Sum "
+date      : 2014-03-20
+
+categories:
+- blog
+---
+![题目描述](/images/blog7/1.jpg "题目描述")
+
+###引言
+这道题让笔者一瞬间就想到了LeetCode:Sum Root to Leaf Numbers这道题，但是这道题要比LeetCode:Sum Root to Leaf Numbers复杂的多得多。这道题的真正意图是将一课二叉树看做一张图，然后求一条加和最大的路径。，其中路径的起始点可以是任一节点。
+
+###算法思想
+显然穷举的思路是可以的，求出所有的可能路径，然后求和，选出一条最大的返回即可。这种思路通常会是第一个蹦出来的最简单思路。但是显然穷举的思路是一定会超时的。
+
+下面仔细分析穷举的弊端：显然穷举中对同一个问题反复求了很多次。因此自然就会想到动态规划的思想。以下图为例进行讲解。
+![题目描述](/images/blog7/2.jpg "题目描述")
+
+对于树的遍历肯定是递归遍历了，先序中序后序笔者认为都可以。首先定义一个变量保存着当前的最大值不防设这个变量为currentMaxSum，它的初值为root.val(笔者用python写的，其实最好应该为int的最小值，但是笔者没有在python中找到这个值)。以节点4为例，在处理4之前，要先处理它的左右儿子，左儿子最大值为18，右儿子最大值为13，因此当递归返回到4时，4之前的最大值应该为18；但是4节点之前的所有节点最大值应该为20:7->11->2,之所以返回给4的最大值是18而不是20是因为，这个路径是无法跟节点4相连形成一条新路径的，对于这个可能的最大值应该与currentMaxSum进行比较，二者的大值保存在currentMaxSum中。以这种方法一直遍历下去直到遍历完整个树，结果即为：递归遍历的结果与currentMaxSum中的大值。
+
+
+python实现的代码如下:
+{% highlight python linenos%}
+class Solution:
+    # @param root, a tree node
+    # @return an integer
+    def __init__(self):
+        self.currentMaxSum=0
+ 
+    def maxPathSum(self, root):
+        if root == None :
+            return 0
+        self.currentMaxSum=root.val
+        maxSum = self.dfs(root)
+        return max(self.currentMaxSum,maxSum)
+
+        
+    def dfs(self, root):  
+        if root==None:
+            return 0
+        left = self.dfs(root.left)
+        right = self.dfs(root.right)
+        sumTmp = root.val
+        if left>0:
+            sumTmp +=left
+        if right>0:
+            sumTmp +=right
+        self.currentMaxSum = max(self.currentMaxSum,sumTmp )
+        return max(root.val,max(root.val+left,root.val+right))
+{% endhighlight %}
+
+###总结
+对于树的问题求解，树的递归遍历永远是最有用的，忘记在哪里看过一句话：递归定义的数据结构应该用递归来解决问题。这道题其实与求一个数组连续序列使它的和最大是一个问题，只不过数组只有一条路径，而本题的二叉树有多条。本题的动态规划思想也很巧妙，如果真要写递推式的话是能写出来的。在穷举时发现重叠问题往往是开启动态规划思想的信号。
+
+最后吐糟一下LeetCode的python支持，写好的代码复制过来就把缩进给修改了，还得自己微调一下，很不爽。
+
+
+###参考
+[http://blog.csdn.net/sunbaigui/article/details/8980697][http://blog.csdn.net/sunbaigui/article/details/8980697]
+
+[http://blog.csdn.net/sunbaigui/article/details/8980697]:http://blog.csdn.net/sunbaigui/article/details/8980697
