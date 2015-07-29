@@ -1,0 +1,88 @@
+---
+layout    : post
+title     : "php apc缓存以及与redis的对比"
+date      : 2015-07-29
+
+categories:
+- blog
+---
+
+
+###APC简介
+
+
+APC的全称为Alternative PHP Cache， 是一款开源的php插件,用来对php的代码或者用户数据进行缓存。
+
+###APC 对php代码的缓存
+apc可以去掉php动态解析以及编译的时间，php脚本可以执行的更快。下面这张图很好的说明了为什么了apc可以让php脚本运行得更快。
+
+![php apc的作用图解](/images/php-apc-cache.png "apc")
+
+PHP是一个动态脚本语言，所以为了让用户在浏览器中看到页面内容，服务器必须解析php代码从而生成想用的html代码。从上面的图中可以看出，在没有apc的时候，用户对php页面的每一次请求，服务器都需要进行对php进行解析，编译以及执行，但是很多时候，只要php代码没有发生更改，php的执行逻辑就不会改变，也就是说解析以及编译的过程就可以省略，直接执行然后将结果返回即可。这就是apc的工作，apc缓存php的可执行代码，从而去掉了解析以及编译的过程，加快了php脚本的执行速度。
+###APC 对用户数据的缓存以及
+
+除了缓存php代码外，apc还可以进行用户数据的缓存，但是由于apc的容量很少，所以缓存的数据最好是那些很长时间都不变的数据，不变的单位应该以天位单位。所以如果数据是变化很频繁的并且数据量也比较大，那么就不要使用apc了，可以使用memcache或者redis。
+
+下面是一个apc和redis的对比测试实验，看一下apc和redis的效率对比。
+
+{% highlight php linenos%}
+  
+function getTimeStamp() {
+	$timestr = microtime();
+	$timestrary = explode(' ', $timestr);
+	$result = intval($timestrary[1])*1000 + intval(floatval($timestrary[0])*1000);
+	return $result;
+}
+$redis = new Redis();
+$redis->connect('127.0.0.1', 6379);
+$key = 'key';
+$value ='value';
+$redis->set($key, $value);
+
+apc_store($key, $value, 1);
+
+$begin = getTimeStamp();
+for($i = 0 ; $i < 100000 ; $i = $i +1) {
+	$result = apc_fetch($key);
+}
+$cost = getTimeStamp() - $begin;
+var_dump($cost);
+$begin = getTimeStamp();
+for($i = 0 ; $i < 100000 ; $i = $i +1) {
+	$result = $redis->get($key);
+}
+$cost = getTimeStamp() - $begin;
+var_dump($cost);
+:$redis->close();
+
+
+{% endhighlight %}
+
+都是简单的取数据操作，分别进行10万次，单位是毫秒。最后的运行结果redis10万次读在4-5秒之间，而apc得10万次读只有50毫秒左右。可以看到如果是简单的缓存一些数据，并且这些数据不会变化且命中的话，apc还是能带来一定的效率提升的。
+
+安装apc时会有一个apc.php的页面可以通过这个页面查看apc的命中。如下图
+
+![php apc使用情况](/images/apc-use.png "apc")
+
+
+###APC的配置
+配置的例子如下:
+
+{% highlight php linenos%}
+extension= apc.so
+apc.enabled=1                   
+apc.shm_segments=1
+apc.shm_size=64M         ; apc内存的大小,最后的大小需要乘上segments的数量，所以这里一共为apc分配64M
+apc.ttl=7200
+apc.user_ttl=7200  
+apc.enable_cli=1         ; 这个如果不开启，则只可以在网页上进行apc操作，不能通过cli进行apc操作
+{% endhighlight %}
+
+
+###参考
+
+[http://www.inmotionhosting.com/support/website/what-is/speed-up-php-with-apc][http://www.inmotionhosting.com/support/website/what-is/speed-up-php-with-apc]
+[http://bbs.phpchina.com/thread-202432-1-1.html][http://bbs.phpchina.com/thread-202432-1-1.html]
+
+[http://www.inmotionhosting.com/support/website/what-is/speed-up-php-with-apc]:[http://www.inmotionhosting.com/support/website/what-is/speed-up-php-with-apc]
+[http://bbs.phpchina.com/thread-202432-1-1.html]:http://bbs.phpchina.com/thread-202432-1-1.html
